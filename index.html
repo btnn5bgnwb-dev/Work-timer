@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>언제퇴근?</title>
+  <title>언제퇴근</title>
 
   <!-- iOS PWA 독립 실행 설정 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="언제퇴근?">
+  <meta name="apple-mobile-web-app-title" content="언제퇴근">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#050507">
 
@@ -496,7 +496,7 @@
     <canvas id="confettiCanvas"></canvas>
 
     <div class="dynamic-capsule" id="capsule">
-      <span class="capsule-content" id="capsuleMessage">오늘 하루도 힘내세요</span>
+      <span class="capsule-content" id="capsuleMessage">오늘 하루도 힘내세요!</span>
       <button class="btn-close-capsule" id="btnCloseCapsule" title="닫기">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -912,7 +912,7 @@
       const total = end - start;
 
       if (total <= 0) {
-        statusLabel.innerText = '출퇴근 시간을 올바르게 입력하세요';
+        statusLabel.innerText = '출·퇴근 시간을 올바르게 입력하세요';
         return;
       }
 
