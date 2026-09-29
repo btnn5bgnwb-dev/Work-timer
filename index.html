@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>퇴근 카운트다운</title>
+
+  <!-- iOS PWA 독립 실행용 메타 태그 추가 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="퇴근타이머">
+  <meta name="theme-color" content="#050507">
+
+  <style>
+    :root {
+      --bg: #050507;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(245, 245, 247, 0.45);
+      --current-accent: #0ea5e9;
+      --glow-rgb: 14, 165, 233;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Pretendard", sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text-primary);
+    }
+
+    .app-viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 50% 0%, #12131a 0%, #050507 90%);
+      /* 노치 및 다이내믹 아일랜드 영역 패딩 안전구역 확보 */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* 고급형 앰비언트 리퀴드 수조 */
+    .liquid-reservoir {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      transition: height 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .liquid-surface-glow {
+      position: absolute;
+      top: -30px;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(var(--glow-rgb), 0.45) 0%, rgba(var(--glow-rgb), 0) 75%);
+      filter: blur(8px);
+      animation: ambientPulse 5s ease-in-out infinite alternate;
+    }
+
+    .liquid-surface-edge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.75) 25%, 
+        var(--current-accent) 50%, 
+        rgba(255, 255, 255, 0.75) 75%, 
+        rgba(255, 255, 255, 0) 100%
+      );
+      box-shadow: 0 0 16px rgba(var(--glow-rgb), 0.8), 0 0 30px rgba(var(--glow-rgb), 0.4);
+      opacity: 0.9;
+    }
+
+    .liquid-volume {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, 
+        rgba(var(--glow-rgb), 0.28) 0%, 
+        rgba(var(--glow-rgb), 0.12) 40%, 
+        rgba(var(--glow-rgb), 0.02) 100%
+      );
+      backdrop-filter: blur(1px);
+    }
+
+    @keyframes ambientPulse {
+      0% { opacity: 0.75; transform: scaleY(0.9); }
+      100% { opacity: 1; transform: scaleY(1.2); }
+    }
+
+    /* 차세대 다이내믹 아일랜드 캡슐 */
+    .dynamic-capsule {
+      position: absolute;
+      top: max(24px, env(safe-area-inset-top));
+      padding: 9px 14px 9px 20px;
+      background: linear-gradient(135deg, rgba(28, 28, 36, 0.94) 0%, rgba(18, 18, 24, 0.96) 100%);
+      border: 1px solid rgba(var(--glow-rgb), 0.35);
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      color: var(--text-primary);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65), 0 0 24px rgba(var(--glow-rgb), 0.22);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      z-index: 50;
+      transform: translateY(-80px) scale(0.92);
+      opacity: 0;
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease, border-color 0.8s ease, box-shadow 0.8s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+      max-width: 90%;
+    }
+
+    .dynamic-capsule.active {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .capsule-content {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .capsule-accent {
+      color: var(--current-accent);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(var(--glow-rgb), 0.6);
+      transition: color 0.8s ease;
+    }
+
+    .capsule-time-chip {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-close-capsule {
+      background: rgba(255, 255, 255, 0.06);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .btn-close-capsule:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.18);
+      transform: scale(1.08);
+    }
+
+    /* 우측 상단 컨트롤 */
+    .top-bar-right {
+      position: absolute;
+      top: max(24px, env(safe-area-inset-top));
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 40;
+    }
+
+    .user-tag {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      letter-spacing: -0.2px;
+      display: none;
+    }
+
+    .btn-settings {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+
+    .btn-settings:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* 메인 타이머 코어 */
+    .timer-core {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .status-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.2px;
+      margin-bottom: 20px;
+    }
+
+    /* 남은 시간 롤링 숫자 표기부 */
+    .time-readout {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-slot {
+      display: flex;
+      align-items: baseline;
+    }
+
+    .rolling-digit {
+      position: relative;
+      height: clamp(3.8rem, 10vw, 6.2rem);
+      line-height: clamp(3.8rem, 10vw, 6.2rem);
+      overflow: hidden;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .digit-strip {
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .digit-item {
+      height: clamp(3.8rem, 10vw, 6.2rem);
+      line-height: clamp(3.8rem, 10vw, 6.2rem);
+      font-size: clamp(3.6rem, 9.5vw, 5.8rem);
+      font-weight: 700;
+      letter-spacing: -2px;
+      color: var(--text-primary);
+    }
+
+    .time-unit {
+      font-size: clamp(1.2rem, 3.2vw, 1.9rem);
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-left: 2px;
+      margin-right: 14px;
+      letter-spacing: -0.5px;
+    }
+
+    .time-slot:last-child .time-unit {
+      margin-right: 0;
+    }
+
+    /* 하단 미니멀 프로그레스 */
+    .progress-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 6px;
+    }
+
+    .percentage-text {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--current-accent);
+      transition: color 0.5s ease;
+    }
+
+    .progress-track {
+      width: 140px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: var(--current-accent);
+      border-radius: 4px;
+      transition: width 0.6s ease, background 0.5s ease;
+    }
+
+    /* 설정 모달 */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .settings-sheet {
+      width: 90%;
+      max-width: 350px;
+      background: #18181c;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .settings-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      letter-spacing: -0.3px;
+    }
+
+    .input-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .input-row label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .input-row.disabled label {
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .input-row input[type="text"],
+    .input-row input[type="time"] {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      color: var(--text-primary);
+      padding: 7px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      text-align: right;
+    }
+
+    .input-row input[type="text"] {
+      width: 130px;
+      text-align: left;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 16px 0;
+    }
+
+    /* 토글 스위치 */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.16);
+      transition: .3s;
+      border-radius: 26px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #30d158;
+    }
+
+    input:disabled + .slider {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    .btn-close-modal {
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-close-modal:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    #confettiCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 30;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-viewport">
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="dynamic-capsule" id="capsule">
+      <span class="capsule-content" id="capsuleMessage">오늘 하루도 힘내세요</span>
+      <button class="btn-close-capsule" id="btnCloseCapsule" title="닫기">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="top-bar-right">
+      <div class="user-tag" id="userTagDisplay"></div>
+      <button class="btn-settings" id="btnOpenSettings" title="설정">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="liquid-reservoir" id="liquidReservoir">
+      <div class="liquid-surface-glow"></div>
+      <div class="liquid-surface-edge"></div>
+      <div class="liquid-volume"></div>
+    </div>
+
+    <div class="timer-core">
+      <div class="status-text" id="statusLabel">퇴근까지 남은 시간</div>
+      <div class="time-readout" id="timeReadout"></div>
+
+      <div class="progress-meta">
+        <div class="percentage-text" id="percentText">0.0%</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="settings-sheet">
+        <div class="settings-title">설정</div>
+        <div class="input-row">
+          <label for="userNameInput">닉네임</label>
+          <input type="text" id="userNameInput" placeholder="이름/닉네임">
+        </div>
+        <div class="input-row">
+          <label for="startTimeInput">출근 시각</label>
+          <input type="time" id="startTimeInput" value="11:00">
+        </div>
+        <div class="input-row">
+          <label for="endTimeInput">퇴근 시각</label>
+          <input type="time" id="endTimeInput" value="19:00">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="input-row">
+          <label for="masterAlertToggle" style="font-weight: 600; color: #fff;">모든 알림</label>
+          <label class="switch">
+            <input type="checkbox" id="masterAlertToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="input-row sub-alert-row" id="rowAlert1h">
+          <label for="alertToggle1h">매 1시간마다 알림</label>
+          <label class="switch">
+            <input type="checkbox" id="alertToggle1h" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="input-row sub-alert-row" id="rowAlert30m">
+          <label for="alertToggle30m">매 30분마다 알림</label>
+          <label class="switch">
+            <input type="checkbox" id="alertToggle30m" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="input-row sub-alert-row" id="rowAlert15m">
+          <label for="alertToggle15m">퇴근 15분 전 알림</label>
+          <label class="switch">
+            <input type="checkbox" id="alertToggle15m" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button class="btn-close-modal" id="btnCloseModal">완료</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userNameInput = document.getElementById('userNameInput');
+    const startTimeInput = document.getElementById('startTimeInput');
+    const endTimeInput = document.getElementById('endTimeInput');
+
+    const masterAlertToggle = document.getElementById('masterAlertToggle');
+    const alertToggle1h = document.getElementById('alertToggle1h');
+    const alertToggle30m = document.getElementById('alertToggle30m');
+    const alertToggle15m = document.getElementById('alertToggle15m');
+
+    const rowAlert1h = document.getElementById('rowAlert1h');
+    const rowAlert30m = document.getElementById('rowAlert30m');
+    const rowAlert15m = document.getElementById('rowAlert15m');
+    const userTagDisplay = document.getElementById('userTagDisplay');
+
+    const timeReadout = document.getElementById('timeReadout');
+    const percentText = document.getElementById('percentText');
+    const progressFill = document.getElementById('progressFill');
+    const statusLabel = document.getElementById('statusLabel');
+    const liquidReservoir = document.getElementById('liquidReservoir');
+    const capsule = document.getElementById('capsule');
+    const capsuleMessage = document.getElementById('capsuleMessage');
+    const btnCloseCapsule = document.getElementById('btnCloseCapsule');
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const btnOpenSettings = document.getElementById('btnOpenSettings');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+
+    function syncMasterAlertState() {
+      const isMasterOn = masterAlertToggle.checked;
+      [alertToggle1h, alertToggle30m, alertToggle15m].forEach(t => t.disabled = !isMasterOn);
+      [rowAlert1h, rowAlert30m, rowAlert15m].forEach(r => {
+        if (isMasterOn) r.classList.remove('disabled');
+        else r.classList.add('disabled');
+      });
+      if (!isMasterOn) {
+        capsule.classList.remove('active');
+        isLiveTracking = false;
+      }
+    }
+    masterAlertToggle.addEventListener('change', syncMasterAlertState);
+
+    function updateNicknameBadge() {
+      const name = userNameInput.value.trim();
+      if (name) {
+        userTagDisplay.innerText = `${name}님`;
+        userTagDisplay.style.display = 'block';
+      } else {
+        userTagDisplay.style.display = 'none';
+      }
+    }
+
+    if (localStorage.getItem('apple_user_name')) userNameInput.value = localStorage.getItem('apple_user_name');
+    if (localStorage.getItem('apple_work_start')) startTimeInput.value = localStorage.getItem('apple_work_start');
+    if (localStorage.getItem('apple_work_end')) endTimeInput.value = localStorage.getItem('apple_work_end');
+    if (localStorage.getItem('apple_alert_master') !== null) {
+      masterAlertToggle.checked = localStorage.getItem('apple_alert_master') === 'true';
+    }
+    if (localStorage.getItem('apple_alert_1h') !== null) {
+      alertToggle1h.checked = localStorage.getItem('apple_alert_1h') === 'true';
+    }
+    if (localStorage.getItem('apple_alert_30m') !== null) {
+      alertToggle30m.checked = localStorage.getItem('apple_alert_30m') === 'true';
+    }
+    if (localStorage.getItem('apple_alert_15m') !== null) {
+      alertToggle15m.checked = localStorage.getItem('apple_alert_15m') === 'true';
+    }
+
+    syncMasterAlertState();
+    updateNicknameBadge();
+
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    btnOpenSettings.addEventListener('click', () => modalOverlay.classList.add('active'));
+    btnCloseModal.addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+      localStorage.setItem('apple_user_name', userNameInput.value.trim());
+      localStorage.setItem('apple_work_start', startTimeInput.value);
+      localStorage.setItem('apple_work_end', endTimeInput.value);
+      localStorage.setItem('apple_alert_master', masterAlertToggle.checked);
+      localStorage.setItem('apple_alert_1h', alertToggle1h.checked);
+      localStorage.setItem('apple_alert_30m', alertToggle30m.checked);
+      localStorage.setItem('apple_alert_15m', alertToggle15m.checked);
+      updateNicknameBadge();
+      renderDashboard();
+    });
+
+    btnCloseCapsule.addEventListener('click', () => {
+      capsule.classList.remove('active');
+      isLiveTracking = false;
+      clearTimeout(autoDismissTimer);
+    });
+
+    function getTodayTarget(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d;
+    }
+
+    let autoDismissTimer = null;
+    let transitionTimer = null;
+    let isLiveTracking = false;
+
+    function showCapsule(htmlContent, durationMs = 180000, enableLive = false) {
+      if (!masterAlertToggle.checked) return;
+
+      const triggerView = () => {
+        capsuleMessage.innerHTML = htmlContent;
+        capsule.classList.add('active');
+        isLiveTracking = enableLive;
+
+        clearTimeout(autoDismissTimer);
+        autoDismissTimer = setTimeout(() => {
+          capsule.classList.remove('active');
+          isLiveTracking = false;
+        }, durationMs);
+      };
+
+      if (capsule.classList.contains('active')) {
+        capsule.classList.remove('active');
+        clearTimeout(transitionTimer);
+        transitionTimer = setTimeout(triggerView, 320);
+      } else {
+        triggerView();
+      }
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        const textOnly = capsuleMessage.innerText.replace(/\s+/g, ' ').trim();
+        new Notification("퇴근 카운트다운", { body: textOnly });
+      }
+    }
+
+    function getGreeting() {
+      const name = userNameInput.value.trim();
+      return name ? `${name}님, ` : "";
+    }
+
+    const colorStops = [
+      { p: 0,   r: 59,  g: 130, b: 246, hex: "#3b82f6" },
+      { p: 25,  r: 14,  g: 165, b: 233, hex: "#0ea5e9" },
+      { p: 50,  r: 16,  g: 185, b: 129, hex: "#10b981" },
+      { p: 75,  r: 245, g: 158, b: 11,  hex: "#f59e0b" },
+      { p: 90,  r: 249, g: 115, b: 22,  hex: "#f97316" },
+      { p: 100, r: 244, g: 63,  b: 94,   hex: "#f43f5e" }
+    ];
+
+    function getDynamicGradient(p) {
+      if (p <= 0) return colorStops[0];
+      if (p >= 100) return colorStops[colorStops.length - 1];
+      let idx = 0;
+      while (idx < colorStops.length - 1 && p > colorStops[idx + 1].p) idx++;
+      const c1 = colorStops[idx];
+      const c2 = colorStops[idx + 1];
+      const factor = (p - c1.p) / (c2.p - c1.p);
+      const r = Math.round(c1.r + (c2.r - c1.r) * factor);
+      const g = Math.round(c1.g + (c2.g - c1.g) * factor);
+      const b = Math.round(c1.b + (c2.b - c1.b) * factor);
+      return { r, g, b, hex: `rgb(${r}, ${g}, ${b})` };
+    }
+
+    function applyDynamicColor(progress) {
+      const color = getDynamicGradient(progress);
+      document.documentElement.style.setProperty('--glow-rgb', `${color.r}, ${color.g}, ${color.b}`);
+      document.documentElement.style.setProperty('--current-accent', color.hex);
+      percentText.style.color = color.hex;
+      progressFill.style.background = color.hex;
+    }
+
+    let rainbowHue = 0;
+    function applyRainbowEffect() {
+      rainbowHue = (rainbowHue + 1.2) % 360;
+      const hex = `hsl(${rainbowHue}, 85%, 60%)`;
+      const c = 0.85 * (1 - Math.abs(2 * 0.6 - 1));
+      const x = c * (1 - Math.abs((rainbowHue / 60) % 2 - 1));
+      const m = 0.6 - c / 2;
+      let r = 0, g = 0, b = 0;
+      if (rainbowHue < 60) { r = c; g = x; }
+      else if (rainbowHue < 120) { r = x; g = c; }
+      else if (rainbowHue < 180) { g = c; b = x; }
+      else if (rainbowHue < 240) { g = x; b = c; }
+      else if (rainbowHue < 300) { r = x; b = c; }
+      else { r = c; b = x; }
+
+      const R = Math.round((r + m) * 255);
+      const G = Math.round((g + m) * 255);
+      const B = Math.round((b + m) * 255);
+
+      document.documentElement.style.setProperty('--glow-rgb', `${R}, ${G}, ${B}`);
+      document.documentElement.style.setProperty('--current-accent', hex);
+      percentText.style.color = hex;
+      progressFill.style.background = hex;
+    }
+
+    function updateRollingDigit(slotId, char) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const strip = slot.querySelector('.digit-strip');
+      const num = parseInt(char, 10);
+      if (isNaN(num)) return;
+      const offset = num * (slot.clientHeight || 70);
+      strip.style.transform = `translateY(-${offset}px)`;
+    }
+
+    function buildSlotHTML(id) {
+      let digits = '';
+      for (let i = 0; i <= 9; i++) digits += `<div class="digit-item">${i}</div>`;
+      return `<div class="rolling-digit" id="${id}"><div class="digit-strip">${digits}</div></div>`;
+    }
+
+    function renderDigits(hours, minutes, seconds) {
+      const showHours = hours > 0;
+      const hStr = String(hours);
+      const mStr = String(minutes);
+      const sStr = String(seconds);
+
+      const targetStructure = `${showHours ? hStr.length : 0}-${mStr.length}-${sStr.length}`;
+
+      if (timeReadout.dataset.structure !== targetStructure) {
+        let html = '';
+        if (showHours) {
+          html += '<div class="time-slot">';
+          for (let i = 0; i < hStr.length; i++) html += buildSlotHTML(`slot-h-${i}`);
+          html += '<span class="time-unit">시간</span></div>';
+        }
+        html += '<div class="time-slot">';
+        for (let i = 0; i < mStr.length; i++) html += buildSlotHTML(`slot-m-${i}`);
+        html += '<span class="time-unit">분</span></div>';
+
+        html += '<div class="time-slot">';
+        for (let i = 0; i < sStr.length; i++) html += buildSlotHTML(`slot-s-${i}`);
+        html += '<span class="time-unit">초</span></div>';
+
+        timeReadout.innerHTML = html;
+        timeReadout.dataset.structure = targetStructure;
+      }
+
+      if (showHours) {
+        for (let i = 0; i < hStr.length; i++) updateRollingDigit(`slot-h-${i}`, hStr[i]);
+      }
+      for (let i = 0; i < mStr.length; i++) updateRollingDigit(`slot-m-${i}`, mStr[i]);
+      for (let i = 0; i < sStr.length; i++) updateRollingDigit(`slot-s-${i}`, sStr[i]);
+    }
+
+    const notifiedRemainIntervals = new Set();
+    let hasTriggered15mAlert = false;
+    let hasTriggeredDone = false;
+
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let confettiActive = false;
+    let confettiParticles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class ConfettiParticle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = -20 - Math.random() * 50;
+        this.size = Math.random() * 8 + 4;
+        this.speedY = Math.random() * 3 + 2;
+        this.speedX = Math.random() * 2 - 1;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 8 - 4;
+        this.hue = Math.random() * 360;
+      }
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX + Math.sin(this.y * 0.02) * 0.4;
+        this.rotation += this.rotationSpeed;
+        this.hue = (this.hue + 2) % 360;
+        if (this.y > canvas.height + 20) this.reset();
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.rotation * Math.PI) / 180);
+        ctx.fillStyle = `hsl(${this.hue}, 90%, 60%)`;
+        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
+        ctx.restore();
+      }
+    }
+
+    function initConfetti() {
+      if (confettiParticles.length === 0) {
+        for (let i = 0; i < 110; i++) confettiParticles.push(new ConfettiParticle());
+      }
+    }
+
+    function animateConfetti() {
+      if (!confettiActive) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach(p => { p.update(); p.draw(); });
+      applyRainbowEffect();
+      requestAnimationFrame(animateConfetti);
+    }
+
+    function startInfiniteConfetti() {
+      if (!confettiActive) {
+        confettiActive = true;
+        initConfetti();
+        animateConfetti();
+      }
+    }
+
+    function buildLiveCapsuleHTML(intProg, timeStr) {
+      return `<span>${getGreeting()}현재</span> <span class="capsule-accent">${intProg}%</span> <span>진행 중 ·</span> <span class="capsule-time-chip">${timeStr}</span> <span>남았습니다!</span>`;
+    }
+
+    function renderDashboard() {
+      const now = new Date();
+      const start = getTodayTarget(startTimeInput.value);
+      const end = getTodayTarget(endTimeInput.value);
+      const total = end - start;
+
+      if (total <= 0) {
+        statusLabel.innerText = '출퇴근 시간을 올바르게 입력하세요';
+        return;
+      }
+
+      if (now < start) {
+        confettiActive = false;
+        liquidReservoir.style.height = '0%';
+        percentText.innerText = '0.0%';
+        progressFill.style.width = '0%';
+        statusLabel.innerText = '출근 대기';
+        applyDynamicColor(0);
+
+        const diff = start - now;
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        renderDigits(h, m, s);
+        return;
+      }
+
+      if (now >= end) {
+        liquidReservoir.style.height = '100%';
+        percentText.innerText = '100.0%';
+        progressFill.style.width = '100%';
+        statusLabel.innerText = '퇴근!';
+        renderDigits(0, 0, 0);
+
+        if (!hasTriggeredDone) {
+          hasTriggeredDone = true;
+          isLiveTracking = false;
+          showCapsule(`<span>${getGreeting()}</span><span class="capsule-accent">퇴근할 시간입니다!</span> <span>오늘도 고생하셨습니다! 🎉</span>`, 180000, false);
+        }
+        startInfiniteConfetti();
+        return;
+      }
+
+      confettiActive = false;
+      const elapsed = now - start;
+      const remain = end - now;
+      const progress = Math.min(100, Math.max(0, (elapsed / total) * 100));
+
+      const h = Math.floor(remain / (1000 * 60 * 60));
+      const m = Math.floor((remain / (1000 * 60)) % 60);
+      const s = Math.floor((remain / 1000) % 60);
+
+      renderDigits(h, m, s);
+
+      percentText.innerText = `${progress.toFixed(1)}%`;
+      progressFill.style.width = `${progress}%`;
+      liquidReservoir.style.height = `${progress.toFixed(2)}%`;
+      statusLabel.innerText = '퇴근까지 남은 시간';
+
+      applyDynamicColor(progress);
+
+      if (isLiveTracking && capsule.classList.contains('active')) {
+        const intProgress = Math.floor(progress);
+        const liveRemainText = h > 0 
+          ? `${h}시간 ${m}분 ${s}초` 
+          : `${m}분 ${s}초`;
+        capsuleMessage.innerHTML = buildLiveCapsuleHTML(intProgress, liveRemainText);
+      }
+
+      if (masterAlertToggle.checked) {
+        const totalRemainMin = Math.floor(remain / (1000 * 60));
+
+        if (totalRemainMin > 0 && totalRemainMin % 30 === 0) {
+          const isExactHour = (totalRemainMin % 60 === 0);
+          const shouldFire = (isExactHour && alertToggle1h.checked) || (!isExactHour && alertToggle30m.checked);
+
+          if (shouldFire && !notifiedRemainIntervals.has(totalRemainMin)) {
+            notifiedRemainIntervals.add(totalRemainMin);
+            const intProgress = Math.floor(progress);
+            const initialRemainText = h > 0 ? `${h}시간 ${m}분 ${s}초` : `${m}분 ${s}초`;
+            
+            showCapsule(buildLiveCapsuleHTML(intProgress, initialRemainText), 10 * 60 * 1000, true);
+          }
+        }
+
+        if (alertToggle15m.checked) {
+          const fifteenMinMs = 15 * 60 * 1000;
+          if (remain <= fifteenMinMs && !hasTriggered15mAlert) {
+            hasTriggered15mAlert = true;
+            showCapsule(`<span>${getGreeting()}</span><span class="capsule-accent">퇴근 15분 전</span><span>입니다. 업무 마무리를 준비하세요!</span>`, 3 * 60 * 1000, false);
+          }
+        }
+      }
+    }
+
+    setInterval(renderDashboard, 1000);
+    renderDashboard();
+  </script>
+</body>
+</html>
