@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>퇴근 카운트다운</title>
 
-  <!-- iOS PWA 독립 실행용 메타 태그 추가 -->
+  <!-- iOS PWA 독립 실행 설정 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="퇴근타이머">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#050507">
-  <!-- iOS 홈 화면 글래스 타이머 아이콘 -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%23040711'/%3E%3C/linearGradient%3E%3ClinearGradient id='glass' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='rgba(255,255,255,0.45)'/%3E%3Cstop offset='50%25' stop-color='rgba(255,255,255,0.1)'/%3E%3Cstop offset='100%25' stop-color='rgba(255,255,255,0.25)'/%3E%3C/linearGradient%3E%3Cfilter id='sh' x='-20%25' y='-20%25' width='150%25' height='150%25'%3E%3CfeDropShadow dx='0' dy='16' stdDeviation='16' flood-color='%23000' flood-opacity='0.75'/%3E%3CfeDropShadow dx='0' dy='4' stdDeviation='6' flood-color='%23000' flood-opacity='0.45'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='115' fill='url(%23bg)'/%3E%3Ccircle cx='256' cy='256' r='170' fill='rgba(255,255,255,0.03)' stroke='rgba(255,255,255,0.08)' stroke-width='1.5' filter='url(%23sh)'/%3E%3Ccircle cx='256' cy='256' r='125' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='22'/%3E%3Ccircle cx='256' cy='256' r='125' fill='none' stroke='url(%23glass)' stroke-width='22' stroke-linecap='round' stroke-dasharray='785' stroke-dashoffset='230' transform='rotate(-90 256 256)' filter='url(%23sh)'/%3E%3Cline x1='256' y1='256' x2='256' y2='175' stroke='url(%23glass)' stroke-width='12' stroke-linecap='round' filter='url(%23sh)'/%3E%3C/svg%3E">
+
+  <!-- iOS 홈 화면 아이콘: 호환성 보장 Base64 규격 (미드나잇 글래스 타이머) -->
+  <link rel="apple-touch-icon" href="data:image/png;base64,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gNT9V9N/179vdH/x/nf/bdc8/J+f/H8A/J+3X/PgV77z58EBQODu038d2f/Bvf3Fu/b66374f67P/T+g/b+vvuq/P732h7/7/49g/xPuv57yH/XvG9pfvOuvuuq/f/3D/wLg/3f1P379uSt/+q8jGoCQ/8zY+/bvGtJfvD9dfdVVT/76f/5XAH6+sO6+337m2mv/eMQCcJ98ePv9v379f9xfvA1X/ffW/3DdrgH/qf5/f/rR/5135Y9/f0QBkPn6547s3/dQ//f7i3f9VVddeemvf3w/AP6/X3H1/T8+7yffXn9EAlA9z4x8oH9of/E2XHXVFZdcfsUu4J+uuOqBcy//4dofj0gAvr977N79u/7aT7z1V111/sVXXbEL+Jorrrq197wLP7viSARwcv8jh/t37utf9+tff/4f/7ri1iHg719xxZ1rr7700g/2P1YAlPyLE4f3D+3/n/vX/3rFlZdf/oNbP9h/rADI3IvH3N/fv7+/eOuv+s2Fv7v4im0A+NcrLp8579xzv3bEATjuuWeOP7R/1339v/7VL89bdvFfD/4fhgB++9W1v1z4n52H/78I4C/gU4b8K9vP+QAAAABJRU5ErkJggg==">
+  <link rel="icon" type="image/png" href="data:image/png;base64,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">
+
   <style>
     :root {
       --bg: #050507;
@@ -49,12 +53,10 @@
       justify-content: center;
       align-items: center;
       background: radial-gradient(circle at 50% 0%, #12131a 0%, #050507 90%);
-      /* 노치 및 다이내믹 아일랜드 영역 패딩 안전구역 확보 */
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* 고급형 앰비언트 리퀴드 수조 */
     .liquid-reservoir {
       position: absolute;
       bottom: 0;
@@ -110,10 +112,9 @@
       100% { opacity: 1; transform: scaleY(1.2); }
     }
 
-    /* 차세대 다이내믹 아일랜드 캡슐 */
     .dynamic-capsule {
       position: absolute;
-      top: max(24px, env(safe-area-inset-top));
+      top: calc(24px + env(safe-area-inset-top));
       padding: 9px 14px 9px 20px;
       background: linear-gradient(135deg, rgba(28, 28, 36, 0.94) 0%, rgba(18, 18, 24, 0.96) 100%);
       border: 1px solid rgba(var(--glow-rgb), 0.35);
@@ -189,10 +190,9 @@
       transform: scale(1.08);
     }
 
-    /* 우측 상단 컨트롤 */
     .top-bar-right {
       position: absolute;
-      top: max(24px, env(safe-area-inset-top));
+      top: calc(24px + env(safe-area-inset-top));
       right: 24px;
       display: flex;
       align-items: center;
@@ -233,7 +233,6 @@
       background: rgba(255, 255, 255, 0.08);
     }
 
-    /* 메인 타이머 코어 */
     .timer-core {
       position: relative;
       z-index: 10;
@@ -252,7 +251,6 @@
       margin-bottom: 20px;
     }
 
-    /* 남은 시간 롤링 숫자 표기부 */
     .time-readout {
       display: flex;
       align-items: baseline;
@@ -304,7 +302,6 @@
       margin-right: 0;
     }
 
-    /* 하단 미니멀 프로그레스 */
     .progress-meta {
       display: flex;
       align-items: center;
@@ -336,7 +333,6 @@
       transition: width 0.6s ease, background 0.5s ease;
     }
 
-    /* 설정 모달 */
     .modal-overlay {
       position: absolute;
       top: 0;
@@ -417,7 +413,6 @@
       margin: 16px 0;
     }
 
-    /* 토글 스위치 */
     .switch {
       position: relative;
       display: inline-block;
