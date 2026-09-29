@@ -12,12 +12,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#050507">
 
-<!-- iOS 및 표준 웹앱 아이콘 (GitHub Pages 서브경로 대응) -->
+  <!-- iOS 및 표준 웹앱 아이콘 -->
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./apple-touch-icon.png">
   <link rel="manifest" href="./manifest.json">
   
-    <style>
+  <style>
     :root {
       --bg: #050507;
       --card-bg: rgba(255, 255, 255, 0.03);
@@ -58,6 +58,105 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
+    /* 시작하기 인트로 오버레이 */
+    .intro-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 30%, #171924 0%, #050507 85%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 90;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 30px;
+      text-align: center;
+    }
+
+    .intro-overlay.hidden {
+      opacity: 0;
+      transform: scale(0.96);
+      pointer-events: none;
+    }
+
+    .intro-title {
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+      background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .intro-desc {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: 36px;
+      line-height: 1.5;
+    }
+
+    .btn-intro-start {
+      padding: 14px 44px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(255, 255, 255, 0.15);
+      transition: all 0.2s ease;
+    }
+
+    .btn-intro-start:hover {
+      transform: scale(1.03);
+      box-shadow: 0 14px 30px rgba(255, 255, 255, 0.25);
+    }
+
+    /* 출근 대기 전용 카드 통로 */
+    .waiting-card-portal {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .waiting-card-portal.active {
+      display: flex;
+    }
+
+    .waiting-text {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    .btn-force-start {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-force-start:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* 앰비언트 리퀴드 수조 */
     .liquid-reservoir {
       position: absolute;
       bottom: 0;
@@ -113,14 +212,15 @@
       100% { opacity: 1; transform: scaleY(1.2); }
     }
 
+    /* 모바일 반응형 완벽 대응 다이내믹 아일랜드 캡슐 */
     .dynamic-capsule {
       position: absolute;
-      top: calc(24px + env(safe-area-inset-top));
-      padding: 9px 14px 9px 20px;
-      background: linear-gradient(135deg, rgba(28, 28, 36, 0.94) 0%, rgba(18, 18, 24, 0.96) 100%);
+      top: calc(20px + env(safe-area-inset-top));
+      padding: 9px 12px 9px 18px;
+      background: linear-gradient(135deg, rgba(28, 28, 36, 0.96) 0%, rgba(18, 18, 24, 0.98) 100%);
       border: 1px solid rgba(var(--glow-rgb), 0.35);
       border-radius: 40px;
-      font-size: 0.9rem;
+      font-size: clamp(0.78rem, 2.6vw, 0.9rem);
       font-weight: 500;
       letter-spacing: -0.2px;
       color: var(--text-primary);
@@ -128,14 +228,15 @@
       backdrop-filter: blur(28px);
       -webkit-backdrop-filter: blur(28px);
       z-index: 50;
-      transform: translateY(-80px) scale(0.92);
+      transform: translateY(-90px) scale(0.92);
       opacity: 0;
       transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease, border-color 0.8s ease, box-shadow 0.8s ease;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       pointer-events: none;
-      max-width: 90%;
+      max-width: calc(100% - 32px);
+      width: auto;
     }
 
     .dynamic-capsule.active {
@@ -144,15 +245,17 @@
       pointer-events: auto;
     }
 
+    /* 줄바꿈 및 작은 모바일 대응 */
     .capsule-content {
-      white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
       font-feature-settings: "tnum";
       font-variant-numeric: tabular-nums;
       display: inline-flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 6px;
+      gap: 4px 6px;
+      word-break: keep-all;
+      line-height: 1.35;
     }
 
     .capsule-accent {
@@ -164,11 +267,12 @@
 
     .capsule-time-chip {
       background: rgba(255, 255, 255, 0.08);
-      padding: 2px 8px;
-      border-radius: 8px;
+      padding: 1px 6px;
+      border-radius: 6px;
       font-weight: 600;
       color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      white-space: nowrap;
     }
 
     .btn-close-capsule {
@@ -182,6 +286,7 @@
       width: 22px;
       height: 22px;
       border-radius: 50%;
+      flex-shrink: 0;
       transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
     }
 
@@ -193,8 +298,8 @@
 
     .top-bar-right {
       position: absolute;
-      top: calc(24px + env(safe-area-inset-top));
-      right: 24px;
+      top: calc(20px + env(safe-area-inset-top));
+      right: 20px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -334,6 +439,7 @@
       transition: width 0.6s ease, background 0.5s ease;
     }
 
+    /* 설정 모달 */
     .modal-overlay {
       position: absolute;
       top: 0;
@@ -391,8 +497,11 @@
       color: rgba(255, 255, 255, 0.2);
     }
 
+    /* 닉네임과 시간 인풋의 가로 폭과 높이를 완벽하게 동일(130px)하게 정렬 */
     .input-row input[type="text"],
     .input-row input[type="time"] {
+      width: 130px;
+      height: 38px;
       background: rgba(255, 255, 255, 0.07);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 10px;
@@ -404,7 +513,6 @@
     }
 
     .input-row input[type="text"] {
-      width: 130px;
       text-align: left;
     }
 
@@ -495,8 +603,16 @@
   <div class="app-viewport">
     <canvas id="confettiCanvas"></canvas>
 
+    <!-- 시작하기 인트로 뷰 -->
+    <div class="intro-overlay" id="introOverlay">
+      <div class="intro-title">언제퇴근</div>
+      <div class="intro-desc">오늘 하루의 근무를 아름다운<br>물병 수조로 함께합니다.</div>
+      <button class="btn-intro-start" id="btnIntroStart">시작하기</button>
+    </div>
+
+    <!-- 다이내믹 아일랜드 캡슐 (반응형 텍스트 래핑 탑재) -->
     <div class="dynamic-capsule" id="capsule">
-      <span class="capsule-content" id="capsuleMessage">오늘 하루도 힘내세요!</span>
+      <div class="capsule-content" id="capsuleMessage">오늘 하루도 힘내세요!</div>
       <button class="btn-close-capsule" id="btnCloseCapsule" title="닫기">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -505,6 +621,7 @@
       </button>
     </div>
 
+    <!-- 우측 상단 컨트롤 -->
     <div class="top-bar-right">
       <div class="user-tag" id="userTagDisplay"></div>
       <button class="btn-settings" id="btnOpenSettings" title="설정">
@@ -515,12 +632,14 @@
       </button>
     </div>
 
+    <!-- 앰비언트 리퀴드 수조 -->
     <div class="liquid-reservoir" id="liquidReservoir">
       <div class="liquid-surface-glow"></div>
       <div class="liquid-surface-edge"></div>
       <div class="liquid-volume"></div>
     </div>
 
+    <!-- 메인 타이머 코어 -->
     <div class="timer-core">
       <div class="status-text" id="statusLabel">퇴근까지 남은 시간</div>
       <div class="time-readout" id="timeReadout"></div>
@@ -531,8 +650,15 @@
           <div class="progress-fill" id="progressFill"></div>
         </div>
       </div>
+
+      <!-- 출근 대기 상태일 때 표출되는 전용 전환 통로 -->
+      <div class="waiting-card-portal" id="waitingPortal">
+        <span class="waiting-text">아직 정규 출근 시각 이전입니다.</span>
+        <button class="btn-force-start" id="btnForceStart">지금 바로 근무 시작하기</button>
+      </div>
     </div>
 
+    <!-- 설정 모달 -->
     <div class="modal-overlay" id="modalOverlay">
       <div class="settings-sheet">
         <div class="settings-title">설정</div>
@@ -586,6 +712,11 @@
   </div>
 
   <script>
+    const introOverlay = document.getElementById('introOverlay');
+    const btnIntroStart = document.getElementById('btnIntroStart');
+    const waitingPortal = document.getElementById('waitingPortal');
+    const btnForceStart = document.getElementById('btnForceStart');
+
     const userNameInput = document.getElementById('userNameInput');
     const startTimeInput = document.getElementById('startTimeInput');
     const endTimeInput = document.getElementById('endTimeInput');
@@ -612,6 +743,26 @@
     const modalOverlay = document.getElementById('modalOverlay');
     const btnOpenSettings = document.getElementById('btnOpenSettings');
     const btnCloseModal = document.getElementById('btnCloseModal');
+
+    // 시작하기 인트로 처리 (최초 진입 시)
+    if (localStorage.getItem('apple_intro_passed')) {
+      introOverlay.classList.add('hidden');
+    }
+    btnIntroStart.addEventListener('click', () => {
+      introOverlay.classList.add('hidden');
+      localStorage.setItem('apple_intro_passed', 'true');
+    });
+
+    // 출근 대기 통로: 조기 출근 버튼 클릭 시 현재 시각으로 출근 시간 즉시 재조정
+    btnForceStart.addEventListener('click', () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      startTimeInput.value = `${hh}:${mm}`;
+      localStorage.setItem('apple_work_start', startTimeInput.value);
+      waitingPortal.classList.remove('active');
+      renderDashboard();
+    });
 
     function syncMasterAlertState() {
       const isMasterOn = masterAlertToggle.checked;
@@ -716,7 +867,7 @@
 
       if ("Notification" in window && Notification.permission === "granted") {
         const textOnly = capsuleMessage.innerText.replace(/\s+/g, ' ').trim();
-        new Notification("퇴근 카운트다운", { body: textOnly });
+        new Notification("언제퇴근", { body: textOnly });
       }
     }
 
@@ -913,6 +1064,7 @@
 
       if (total <= 0) {
         statusLabel.innerText = '출·퇴근 시간을 올바르게 입력하세요';
+        waitingPortal.classList.remove('active');
         return;
       }
 
@@ -924,6 +1076,9 @@
         statusLabel.innerText = '출근 대기';
         applyDynamicColor(0);
 
+        // 출근 대기 전용 카드 통로 활성화
+        waitingPortal.classList.add('active');
+
         const diff = start - now;
         const h = Math.floor(diff / (1000 * 60 * 60));
         const m = Math.floor((diff / (1000 * 60)) % 60);
@@ -931,6 +1086,9 @@
         renderDigits(h, m, s);
         return;
       }
+
+      // 출근 이후면 대기 통로 숨김
+      waitingPortal.classList.remove('active');
 
       if (now >= end) {
         liquidReservoir.style.height = '100%';
